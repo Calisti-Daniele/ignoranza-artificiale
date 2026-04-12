@@ -43,3 +43,34 @@ Tracked findings from security audits. CRITICAL and HIGH findings must be resolv
 | H1 | Redis key injection via unvalidated X-Session-ID | Phase 3 |
 | H2 | Redis connection created per-request (no pool) | Phase 3 |
 | H3 | Backend Dockerfile single-stage | Phase 3 |
+
+---
+
+## Phase 4 Audit — 2026-04-13
+
+**Auditor:** @security-auditor (Opus)
+**Verdict:** CONDITIONALLY APPROVED (after H-1/H-2 fixes)
+
+### MEDIUM
+
+#### M1 — No IP fallback for clients behind reverse proxy
+**File:** `backend/app/api/v1/chat.py:74`
+**Problem:** `request.client.host` falls back to `"unknown"` when `request.client` is `None` (common behind proxies/Unix sockets). All unknown clients share a single rate-limit bucket, enabling either starvation of legitimate traffic or bypass by a single attacker.
+**Recommendation:** Read a trusted header (`X-Forwarded-For`) via `ProxyHeadersMiddleware` with `trusted_hosts` configured. If no IP can be resolved, reject the request instead of collapsing to a shared key.
+
+#### M2 — Rate limiter is fixed-window, not sliding-window
+**File:** `backend/app/services/rate_limiter.py`
+**Problem:** The Lua script uses `INCR` + `EXPIRE` on first hit — this is a fixed-window counter. At window boundaries an attacker can fire 2× the intended limit (e.g. 10 at T−1s + 10 at T+1s = 20 in 2s against a 10/60s limit).
+**Recommendation:** Either update the docstring to "fixed-window" (acceptable risk for this project) or implement a true sliding window using Redis sorted sets (`ZADD` / `ZREMRANGEBYSCORE` / `ZCARD`).
+
+#### M3 — Stale empty file in `core/rate_limiter.py`
+**File:** `backend/app/core/rate_limiter.py`
+**Problem:** Contains only a 6-line docstring with no implementation. The actual rate limiter lives at `backend/app/services/rate_limiter.py`. The stale file causes import path confusion and misleads developers into thinking rate limiting may not be implemented.
+**Recommendation:** Delete `backend/app/core/rate_limiter.py`.
+
+### RESOLVED (HIGH)
+
+| ID | Finding | Fixed in |
+|----|---------|----------|
+| H-1 | No `max_tokens` on LLM calls — runaway generation possible | Phase 4 (routing: 30, streaming: 2048) |
+| H-2 | No timeouts on upstream LLM calls — worker could block indefinitely | Phase 4 (routing: 10s, streaming: 120s via `asyncio.timeout`) |

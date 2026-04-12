@@ -121,5 +121,11 @@ def load_agents_from_yaml() -> None:
         slug_to_filename[agent.slug] = yaml_path.name
         logger.info("Agente caricato: '%s' (%s)", agent.slug, agent.name)
 
-    AGENTS = loaded
+    # Update the existing module-level dict IN PLACE so that all `from
+    # app.core.agent_registry import AGENTS` aliases across the codebase
+    # (bound at import time to this exact dict object) see the populated data.
+    # Reassigning `AGENTS = loaded` would rebind only the local module name and
+    # leave every pre-existing alias pointing at the original empty dict.
+    AGENTS.clear()
+    AGENTS.update(loaded)
     logger.info("Registry agenti inizializzato con %d agente/i.", len(AGENTS))
