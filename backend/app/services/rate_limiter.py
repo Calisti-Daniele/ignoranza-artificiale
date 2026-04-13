@@ -1,14 +1,29 @@
 """
-Redis-based dual-layer rate limiter using an atomic Lua sliding-window script.
+Redis-based dual-layer rate limiter using an atomic Lua fixed-window counter.
+
+Algorithm: FIXED-WINDOW COUNTER (intentional design choice, risk accepted).
+---------------------------------------------------------------------------
+The Lua script performs INCR on the key and sets EXPIRE only when the key is
+created (count == 1).  This means the window is fixed: it starts at the first
+request and resets after RATE_LIMIT_WINDOW_SECONDS seconds, regardless of when
+subsequent requests arrive.
+
+Known trade-off: at window boundaries an attacker can fire up to 2× the
+configured limit within a short period (e.g., burst at the end of window N
+followed immediately by a burst at the start of window N+1).  For this project
+the simplicity and atomicity of the approach outweigh the boundary-burst risk.
+A true sliding window (Redis sorted sets / ZADD+ZREMRANGEBYSCORE+ZCARD) is the
+recommended upgrade path if stricter enforcement becomes necessary.
+
+The INCR+EXPIRE pattern is atomic with respect to key creation: if the server
+crashes between INCR and EXPIRE on a brand-new key the key survives without a
+TTL and the rate limit becomes permanent.  The Lua script avoids this race by
+only calling EXPIRE when count == 1.  evalsha() is used after script loading to
+avoid re-sending the script on every call.
 
 Layers:
 1. Session-based (per X-Session-ID)  — configurable via RATE_LIMIT_REQUESTS / RATE_LIMIT_WINDOW_SECONDS
 2. IP-based (hard ceiling)            — configurable via RATE_LIMIT_REQUESTS / RATE_LIMIT_WINDOW_SECONDS
-
-The Lua script performs an atomic INCR + conditional EXPIRE to avoid the INCR/EXPIRE
-race condition: if the server crashes between the two commands on a brand-new key, the
-key survives forever without a TTL and the rate limit becomes permanent for that identity.
-evalsha() is used after script loading to avoid re-sending the script on every call.
 """
 
 import logging
@@ -21,10 +36,10 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Lua sliding-window script (atomic INCR + EXPIRE on new key).
+# Lua fixed-window script (atomic INCR + EXPIRE on new key).
 # Returns the current request count AFTER increment.
 # ---------------------------------------------------------------------------
-_LUA_SLIDING_WINDOW = """
+_LUA_FIXED_WINDOW = """
 local key     = KEYS[1]
 local window  = tonumber(ARGV[1])
 local count   = redis.call('INCR', key)
@@ -50,7 +65,7 @@ class RateLimiter:
     async def _get_sha(self, redis: aioredis.Redis) -> str:
         """Load the Lua script into Redis and cache the SHA1 hash."""
         if self._sha is None:
-            self._sha = await redis.script_load(_LUA_SLIDING_WINDOW)
+            self._sha = await redis.script_load(_LUA_FIXED_WINDOW)
         return self._sha
 
     async def _check_layer(

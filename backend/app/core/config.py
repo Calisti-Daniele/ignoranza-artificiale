@@ -17,8 +17,15 @@ class Settings(BaseSettings):
     # Security headers
     HTTPS_ENABLED: bool = False
 
-    # Trusted hosts — ALLOWED_HOSTS=* in development, restrict in production.
-    ALLOWED_HOSTS: list[str] = ["*"]
+    # Trusted hosts — MUST be set explicitly in production.
+    # Example: ALLOWED_HOSTS=yourdomain.com,api.yourdomain.com
+    # An empty list causes TrustedHostMiddleware to reject all requests, so
+    # this must be populated before running in any environment.
+    ALLOWED_HOSTS: list[str] = []
+
+    # OpenAPI/Swagger docs — disabled by default (production-safe).
+    # Set DOCS_ENABLED=true only in development environments.
+    DOCS_ENABLED: bool = False
 
     # Rate limiting — sliding window thresholds applied server-wide (no BYOK).
     RATE_LIMIT_REQUESTS: int = 20

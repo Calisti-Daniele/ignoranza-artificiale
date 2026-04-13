@@ -28,12 +28,21 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Database engine — created once at module import time and reused across requests.
 # ---------------------------------------------------------------------------
+# SQLite doesn't support pool_size/max_overflow; only apply them for other databases
+_engine_kwargs = {
+    "echo": False,
+}
+
+if "sqlite" not in settings.DATABASE_URL.lower():
+    _engine_kwargs.update({
+        "pool_pre_ping": True,
+        "pool_size": 10,
+        "max_overflow": 20,
+    })
+
 _engine = create_async_engine(
     settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-    echo=False,
+    **_engine_kwargs,
 )
 
 _AsyncSessionFactory: async_sessionmaker[AsyncSession] = async_sessionmaker(

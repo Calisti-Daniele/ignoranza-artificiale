@@ -6,7 +6,6 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import (
-    ARRAY,
     Boolean,
     DateTime,
     ForeignKey,
@@ -14,7 +13,7 @@ from sqlalchemy import (
     String,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base

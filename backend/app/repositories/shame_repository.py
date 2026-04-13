@@ -13,8 +13,8 @@ import math
 import uuid
 from typing import Literal
 
-from sqlalchemy import cast, func, select, update
-from sqlalchemy.dialects.postgresql import ARRAY, TEXT
+from sqlalchemy import String, cast, func, select, update
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.shame import HallOfShameEntry
@@ -50,7 +50,7 @@ class ShameRepository(BaseRepository[HallOfShameEntry, ShameEntryCreate, ShameEn
             # Use the @> (contains) operator for GIN-indexed ARRAY column.
             base_stmt = base_stmt.where(
                 HallOfShameEntry.agent_slugs.contains(
-                    cast([agent_slug_filter], ARRAY(TEXT))
+                    cast([agent_slug_filter], ARRAY(String(64)))
                 )
             )
 

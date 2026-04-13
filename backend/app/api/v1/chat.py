@@ -25,6 +25,7 @@ from fastapi.responses import StreamingResponse
 
 from app.core.agent_registry import AGENTS
 from app.core.dependencies import get_openrouter_key, get_redis, get_session_id
+from app.core.security import get_client_ip
 from app.schemas.chat import ChatRequest
 from app.services.chat_service import stream_chat_response
 from app.services.rate_limiter import rate_limiter
@@ -71,7 +72,16 @@ async def chat_stream(
     - 10 req / 60 s per session
     - 30 req / 60 s per IP
     """
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
+    if client_ip is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "UNRESOLVABLE_CLIENT",
+                "message": "Impossibile determinare l'indirizzo IP del client.",
+                "retry_after_seconds": None,
+            },
+        )
 
     # ------------------------------------------------------------------
     # Pre-stream validation (all must succeed before generator starts).

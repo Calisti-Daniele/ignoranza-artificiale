@@ -48,9 +48,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(
     title="Ignoranza Artificiale API",
     version="0.1.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
+    docs_url="/api/docs" if settings.DOCS_ENABLED else None,
+    redoc_url="/api/redoc" if settings.DOCS_ENABLED else None,
+    openapi_url="/api/openapi.json" if settings.DOCS_ENABLED else None,
     lifespan=lifespan,
 )
 

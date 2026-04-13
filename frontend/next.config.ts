@@ -14,10 +14,8 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           { key: 'X-XSS-Protection', value: '0' },
-          {
-            key: 'Content-Security-Policy',
-            value: `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' fonts.gstatic.com; connect-src 'self' ${apiUrl}; frame-ancestors 'none'`,
-          },
+          // Content-Security-Policy is set per-request by src/middleware.ts
+          // using a cryptographic nonce, so it is intentionally absent here.
         ],
       },
     ]
