@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     REDIS_URL: str
     OPENROUTER_API_KEY: str
 
+    # SSL — required by DigitalOcean Managed Postgres.
+    # asyncpg does not honour ?sslmode=require as a query parameter; SSL must be
+    # passed via connect_args={"ssl": True} at engine-creation time instead.
+    # Set DB_SSL_REQUIRE=true in any environment that uses a TLS-only Postgres host.
+    DB_SSL_REQUIRE: bool = False
+
     # CORS — development default: http://localhost:3000
     # In production: set CORS_ORIGINS to the public frontend domain.
     CORS_ORIGINS: list[AnyHttpUrl] = ["http://localhost:3000"]

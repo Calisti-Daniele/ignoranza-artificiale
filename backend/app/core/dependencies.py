@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # Database engine — created once at module import time and reused across requests.
 # ---------------------------------------------------------------------------
 # SQLite doesn't support pool_size/max_overflow; only apply them for other databases
-_engine_kwargs = {
+_engine_kwargs: dict = {
     "echo": False,
 }
 
@@ -39,6 +39,12 @@ if "sqlite" not in settings.DATABASE_URL.lower():
         "pool_size": 10,
         "max_overflow": 20,
     })
+
+# asyncpg does not honour ?sslmode=require as a URL query parameter.
+# The correct approach is to pass ssl=True via connect_args when the host
+# requires TLS (e.g. DigitalOcean Managed Postgres on port 25060).
+if settings.DB_SSL_REQUIRE:
+    _engine_kwargs["connect_args"] = {"ssl": True}
 
 _engine = create_async_engine(
     settings.DATABASE_URL,

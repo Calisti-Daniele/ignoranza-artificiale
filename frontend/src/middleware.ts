@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+// NEXT_PUBLIC_API_URL is only needed when the browser must reach the backend
+// directly (e.g. a public API domain). In production the frontend proxy
+// (src/app/api/v1/[...path]/route.ts) handles all backend traffic server-side,
+// so 'self' is sufficient. Set this var only when you expose the backend
+// publicly and the browser needs to connect to it directly.
+const extraConnectSrc = process.env.NEXT_PUBLIC_API_URL ?? ''
 const isDev = process.env.NODE_ENV === 'development'
 
 export function middleware(request: NextRequest): NextResponse {
@@ -10,13 +15,17 @@ export function middleware(request: NextRequest): NextResponse {
     ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
     : `script-src 'self' 'nonce-${nonce}'`
 
+  const connectSrc = ['self', ...(extraConnectSrc ? [extraConnectSrc] : [])]
+    .map((v) => (v === 'self' ? `'self'` : v))
+    .join(' ')
+
   const csp = [
     `default-src 'self'`,
     scriptSrc,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: https:`,
     `font-src 'self' fonts.gstatic.com`,
-    `connect-src 'self' ${apiUrl}`,
+    `connect-src ${connectSrc}`,
     `frame-ancestors 'none'`,
   ].join('; ')
 
