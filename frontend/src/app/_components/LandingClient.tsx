@@ -24,7 +24,7 @@ export default function LandingPage() {
           Ignoranza Artificiale™
         </span>
         <span className="ml-2 sm:ml-3 font-mono text-[9px] text-[--text-muted] opacity-50">
-          v4.2.1-BETA
+          v0.0.1-BETA
         </span>
       </div>
 
@@ -45,7 +45,7 @@ export default function LandingPage() {
           >
             Il sistema è operativo.
             <br />
-            <span className="text-[--text-primary]">Siamo spiacenti.</span>
+            <span className="text-[--text-primary]">Ti dispiace?</span>
           </p>
         </div>
 

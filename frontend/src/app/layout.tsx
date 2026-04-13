@@ -29,10 +29,10 @@ const playfairDisplay = Playfair_Display({
 
 export const metadata: Metadata = {
   title: 'Ignoranza Artificiale™',
-  description: 'Il sistema è operativo. Siamo spiacenti.',
+  description: 'Il sistema è operativo. Ti dispiace?.',
   openGraph: {
     title: 'Ignoranza Artificiale™',
-    description: 'Il sistema è operativo. Siamo spiacenti.',
+    description: 'Il sistema è operativo. Ti dispiace?.',
     type: 'website',
   },
 }
