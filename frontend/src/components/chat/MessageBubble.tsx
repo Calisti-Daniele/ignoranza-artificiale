@@ -48,7 +48,7 @@ export default function MessageBubble({ message, agentAccentColor }: MessageBubb
     >
       <div
         className={cn(
-          'max-w-[75%] flex flex-col gap-1.5',
+          'max-w-[90%] sm:max-w-[75%] flex flex-col gap-1.5',
           isUser ? 'items-end' : 'items-start',
         )}
       >

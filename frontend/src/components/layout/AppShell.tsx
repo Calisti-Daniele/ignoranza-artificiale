@@ -7,7 +7,7 @@ interface AppShellProps {
 
 export default function AppShell({ children, sidebar }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-[--background] flex flex-col">
+    <div className="min-h-[100dvh] bg-[--background] flex flex-col">
       <Navbar />
       <div className="flex flex-1 pt-12">
         {sidebar && (

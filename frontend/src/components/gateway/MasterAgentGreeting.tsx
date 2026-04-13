@@ -1,9 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import Link from 'next/link'
 import StreamingIndicator from '@/components/chat/StreamingIndicator'
-import Button from '@/components/ui/Button'
 
 export interface MasterAgentGreetingProps {
   greeting: string
@@ -17,8 +15,6 @@ export default function MasterAgentGreeting({ greeting, isLoading }: MasterAgent
     if (!greeting) return []
     return greeting.split(/(\s+)/).filter(Boolean)
   }, [greeting])
-
-  const isComplete = !isLoading && greeting.length > 0
 
   return (
     <div className="flex flex-col gap-6 max-w-xl">
@@ -65,19 +61,6 @@ export default function MasterAgentGreeting({ greeting, isLoading }: MasterAgent
         )}
       </div>
 
-      {/* CTA button — only shown after greeting */}
-      {isComplete && (
-        <div
-          className="word-reveal"
-          style={{ animationDelay: `${Math.min(words.length * 30 + 200, 1500)}ms` }}
-        >
-          <Link href="/chat">
-            <Button variant="primary" size="lg">
-              Accedi alla piattaforma
-            </Button>
-          </Link>
-        </div>
-      )}
     </div>
   )
 }

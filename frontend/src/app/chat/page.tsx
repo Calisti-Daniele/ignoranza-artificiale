@@ -25,7 +25,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[--background] overflow-hidden">
+    <div className="flex flex-col h-[100dvh] bg-[--background] overflow-hidden">
       <Navbar />
 
       {/* Content area under navbar */}
@@ -45,18 +45,18 @@ export default function ChatPage() {
         {/* Main chat area */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Top bar */}
-          <div className="shrink-0 h-10 border-b border-[--border] flex items-center justify-between px-4">
+          <div className="shrink-0 h-10 border-b border-[--border] flex items-center justify-between gap-2 px-3 sm:px-4">
             {/* Mobile: drawer button */}
             <button
-              className="lg:hidden text-[--text-muted] hover:text-[--text-primary] transition-colors"
+              className="lg:hidden text-[--text-muted] hover:text-[--text-primary] transition-colors shrink-0"
               onClick={() => setMobileDrawerOpen(true)}
               aria-label="Apri pannello agenti"
             >
               <Menu size={16} />
             </button>
 
-            {/* Active agent or status */}
-            <div className="flex items-center gap-3">
+            {/* Active agent or status — hidden on very small screens when streaming to avoid overflow */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
               {isStreaming && activeAgentName && activeAgent ? (
                 <>
                   <AgentBadge
@@ -64,12 +64,12 @@ export default function ChatPage() {
                     accentColor={activeAgent.accentColor}
                     size="sm"
                   />
-                  <span className="font-mono text-[10px] text-[--text-muted]">
+                  <span className="font-mono text-[10px] text-[--text-muted] truncate hidden sm:inline">
                     In elaborazione...
                   </span>
                 </>
               ) : (
-                <span className="font-mono text-[10px] text-[--text-muted] uppercase tracking-[0.06em]">
+                <span className="font-mono text-[10px] text-[--text-muted] uppercase tracking-[0.06em] truncate hidden sm:inline">
                   Chat — Interfaccia Standard
                 </span>
               )}
@@ -79,10 +79,11 @@ export default function ChatPage() {
               variant="ghost"
               size="sm"
               onClick={resetSession}
-              className="text-[10px] font-mono"
+              className="text-[10px] font-mono shrink-0 whitespace-nowrap"
               aria-label="Nuova sessione"
             >
-              Nuova sessione
+              <span className="hidden sm:inline">Nuova sessione</span>
+              <span className="sm:hidden">Reset</span>
             </Button>
           </div>
 
@@ -94,7 +95,7 @@ export default function ChatPage() {
           )}
 
           {/* Chat window */}
-          <div className="flex-1 overflow-hidden" style={{ paddingLeft: '2rem', paddingRight: '4rem' }}>
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <ChatWindow
               session={session}
               agents={agents}

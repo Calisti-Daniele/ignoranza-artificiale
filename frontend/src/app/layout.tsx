@@ -52,8 +52,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         {/* Expose the nonce via a meta tag so client utilities can read it when needed */}
         {nonce && <meta name="csp-nonce" content={nonce} />}
+        {/* Viewport meta: prevents iOS auto-zoom on input focus */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
-      <body className="font-body bg-background text-text-primary antialiased">{children}</body>
+      <body className="font-body bg-background text-text-primary antialiased" suppressHydrationWarning>{children}</body>
     </html>
   )
 }

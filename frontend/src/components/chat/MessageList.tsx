@@ -23,8 +23,8 @@ export default function MessageList({ messages, agents }: MessageListProps) {
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="text-[--text-muted] font-mono text-xs tracking-wide">
+      <div className="flex-1 h-full flex items-center justify-center px-4">
+        <p className="text-[--text-muted] font-mono text-xs tracking-wide text-center">
           Nessun messaggio. Inizia la conversazione.
         </p>
       </div>
@@ -32,7 +32,7 @@ export default function MessageList({ messages, agents }: MessageListProps) {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-4">
+    <div className="h-full overflow-y-auto px-3 sm:px-6 md:px-12 lg:px-16 py-4 sm:py-6 flex flex-col gap-4">
       {messages.map((msg) => {
         const agent = msg.agentSlug ? agentMap[msg.agentSlug] : undefined
         return (

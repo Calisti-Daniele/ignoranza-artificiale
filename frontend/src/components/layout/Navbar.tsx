@@ -15,21 +15,22 @@ export default function Navbar() {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-40 h-12 bg-[--background] border-b border-[--border] flex items-center px-6"
+      className="fixed top-0 left-0 right-0 z-40 h-12 bg-[--background] border-b border-[--border] flex items-center px-4 sm:px-6"
       role="navigation"
       aria-label="Navigazione principale"
     >
-      <div className="flex items-center gap-8 w-full">
-        {/* Logo */}
+      <div className="flex items-center gap-4 sm:gap-8 w-full min-w-0">
+        {/* Logo — truncated on very small screens */}
         <Link
           href="/"
-          className="font-mono text-xs uppercase tracking-[0.08em] text-[--text-primary] hover:text-white transition-colors shrink-0"
+          className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.06em] sm:tracking-[0.08em] text-[--text-primary] hover:text-white transition-colors shrink-0 truncate max-w-[140px] sm:max-w-none"
         >
-          Ignoranza Artificiale™
+          <span className="hidden xs:inline">Ignoranza Artificiale™</span>
+          <span className="xs:hidden">IA™</span>
         </Link>
 
         {/* Nav links */}
-        <div className="flex items-center gap-6 ml-auto">
+        <div className="flex items-center gap-3 sm:gap-6 ml-auto shrink-0">
           {navLinks.map((link) => {
             const isActive =
               link.href === '/'
@@ -41,8 +42,8 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  'font-mono text-[11px] uppercase tracking-[0.06em] transition-colors duration-150',
-                  'relative',
+                  'font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.04em] sm:tracking-[0.06em] transition-colors duration-150',
+                  'relative whitespace-nowrap',
                   isActive
                     ? 'text-[--text-primary]'
                     : 'text-[--text-muted] hover:text-[--text-primary]',

@@ -21,11 +21,11 @@ export default async function VergognaPage() {
       <Navbar />
 
       <div className="pt-12">
-        <div className="px-8 py-10 border-b border-[--border]">
+        <div className="px-4 sm:px-8 py-8 sm:py-10 border-b border-[--border]">
           <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[--text-muted] mb-2">
             Hall of Shame
           </p>
-          <h1 className="font-serif text-2xl font-normal text-[--text-primary]">
+          <h1 className="font-serif text-xl sm:text-2xl font-normal text-[--text-primary]">
             Archivio Pubblico delle Disfunzioni Artificiali
           </h1>
         </div>

@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const isDev = process.env.NODE_ENV === 'development'
 
 export function middleware(request: NextRequest): NextResponse {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
 
+  const scriptSrc = isDev
+    ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
+    : `script-src 'self' 'nonce-${nonce}'`
+
   const csp = [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}'`,
+    scriptSrc,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: https:`,
     `font-src 'self' fonts.gstatic.com`,

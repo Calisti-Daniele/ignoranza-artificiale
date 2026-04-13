@@ -27,19 +27,28 @@ export default function ChatWindow({
     session.messages.length >= MIN_MESSAGES_FOR_SHAME && !isStreaming
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <MessageList messages={session.messages} agents={agents} />
+    <div className="flex flex-col flex-1 min-h-0">
+      {/* Scrollable message area — grows to fill available height */}
+      <div className="flex-1 overflow-hidden min-h-0">
+        <MessageList messages={session.messages} agents={agents} />
+      </div>
 
+      {/* Optional shame button above input */}
       {showShameButton && (
-        <SubmitToShameButton
-          sessionMessages={session.messages}
-          conversationId={conversationId}
-          agents={agents}
-          onSuccess={onShameSuccess}
-        />
+        <div className="shrink-0">
+          <SubmitToShameButton
+            sessionMessages={session.messages}
+            conversationId={conversationId}
+            agents={agents}
+            onSuccess={onShameSuccess}
+          />
+        </div>
       )}
 
-      <ChatInputBar onSend={onSendMessage} disabled={isStreaming} />
+      {/* Input bar — always anchored to the bottom */}
+      <div className="shrink-0">
+        <ChatInputBar onSend={onSendMessage} disabled={isStreaming} />
+      </div>
     </div>
   )
 }

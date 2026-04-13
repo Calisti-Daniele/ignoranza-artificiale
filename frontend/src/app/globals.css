@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safe-area utilities for iPhone notch / home indicator */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .pb-safe-4 {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
 :root {
   --font-bricolage: 'Bricolage Grotesque', sans-serif;
   --font-dm-sans: 'DM Sans', sans-serif;

@@ -31,14 +31,14 @@ export default function ChatInputBar({ onSend, disabled }: ChatInputBarProps) {
   )
 
   return (
-    <div className="border-t border-[--border] bg-[--background] px-4 py-3">
-      <div className="flex gap-3 items-end">
+    <div className="border-t border-[--border] bg-[--background] px-3 sm:px-4 pt-3 pb-safe">
+      <div className="flex gap-2 sm:gap-3 items-end">
         <textarea
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          rows={3}
+          rows={2}
           placeholder="Inserisca la sua richiesta. Verrà gestita con la massima incompetenza."
           aria-label="Messaggio"
           className={cn(
@@ -48,6 +48,8 @@ export default function ChatInputBar({ onSend, disabled }: ChatInputBarProps) {
             'focus:outline-none focus:border-[--text-muted]',
             'transition-colors duration-150',
             'disabled:opacity-40 disabled:cursor-not-allowed',
+            /* Prevent iOS auto-zoom: font-size must be >= 16px on mobile */
+            'text-base sm:text-sm',
           )}
         />
         <Button
@@ -56,13 +58,13 @@ export default function ChatInputBar({ onSend, disabled }: ChatInputBarProps) {
           onClick={handleSend}
           disabled={disabled || !value.trim()}
           aria-label="Invia messaggio"
-          className="shrink-0 gap-1.5 self-end"
+          className="shrink-0 gap-1.5 self-end min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
         >
           <Send size={14} />
-          <span>Invia</span>
+          <span className="hidden sm:inline">Invia</span>
         </Button>
       </div>
-      <p className="text-[10px] font-mono text-[--text-muted] mt-1.5 ml-0.5">
+      <p className="text-[10px] font-mono text-[--text-muted] mt-1.5 ml-0.5 hidden sm:block">
         Ctrl+Enter per inviare
       </p>
     </div>

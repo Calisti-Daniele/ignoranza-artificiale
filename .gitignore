@@ -30,3 +30,6 @@ frontend/.env.local
 
 # Docker volumes
 postgres_data/
+
+# pnpm local store (created by dev container)
+frontend/.pnpm-store/
