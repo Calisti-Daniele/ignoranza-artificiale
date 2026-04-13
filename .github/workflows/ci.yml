@@ -128,7 +128,7 @@ jobs:
             -f backend/Dockerfile \
             -t ghcr.io/${{ env.OWNER }}/ignoranza-be:latest \
             -t ghcr.io/${{ env.OWNER }}/ignoranza-be:${{ github.sha }} \
-            .
+            ./backend
 
       - name: Build frontend image
         run: |
@@ -136,7 +136,7 @@ jobs:
             -f frontend/Dockerfile \
             -t ghcr.io/${{ env.OWNER }}/ignoranza-fe:latest \
             -t ghcr.io/${{ env.OWNER }}/ignoranza-fe:${{ github.sha }} \
-            .
+            ./frontend
 
       - name: Push backend image
         run: |
