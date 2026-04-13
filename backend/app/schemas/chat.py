@@ -32,6 +32,10 @@ class ChatRequest(BaseModel):
         max_length=40,
         description="Previous messages to provide context. Client manages this state.",
     )
+    enabled_agent_slugs: list[str] | None = Field(
+        default=None,
+        description="Whitelist of agent slugs the user has enabled. None means all agents are available.",
+    )
     conversation_id: UUID | None = Field(
         default=None,
         description="Client-generated UUID identifying this conversation session.",

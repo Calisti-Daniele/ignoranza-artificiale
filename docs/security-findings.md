@@ -46,6 +46,17 @@ Tracked findings from security audits. CRITICAL and HIGH findings must be resolv
 
 ---
 
+## Phase 5 — Runtime Finding — 2026-04-13
+
+### MEDIUM
+
+#### M1 — CSP `script-src` allows `'unsafe-inline'`
+**File:** `frontend/next.config.ts`
+**Problem:** Next.js App Router injects inline scripts for hydration. To unblock the app, `script-src 'self' 'unsafe-inline'` was set. This weakens XSS protection: any injected inline script would execute.
+**Recommendation:** Implement nonce-based CSP via Next.js middleware (`middleware.ts`). Generate a cryptographically random nonce per request, pass it to the `<Script>` components, and set `script-src 'self' 'nonce-{nonce}'` in the header. This removes the need for `'unsafe-inline'` entirely.
+
+---
+
 ## Phase 4 Audit — 2026-04-13
 
 **Auditor:** @security-auditor (Opus)

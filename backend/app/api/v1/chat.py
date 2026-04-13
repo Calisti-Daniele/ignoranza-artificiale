@@ -87,28 +87,34 @@ async def chat_stream(
         ip_limit=_IP_LIMIT,
     )
 
-    # 2. Validate agent_slug if explicitly provided
-    if body.agent_slug is not None:
-        if body.agent_slug not in AGENTS:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={
-                    "code": "AGENT_NOT_FOUND",
-                    "message": f"L'agente '{body.agent_slug}' non esiste.",
-                    "retry_after_seconds": None,
-                },
-            )
+    # 2. Resolve the effective agent pool (enabled_agent_slugs filters the registry)
+    if body.enabled_agent_slugs is not None:
+        effective_agents = {s: AGENTS[s] for s in body.enabled_agent_slugs if s in AGENTS}
+    else:
+        effective_agents = dict(AGENTS)
 
-    # 3. Guard against empty registry (should not happen post-startup, but be safe)
-    if not AGENTS:
+    # 3. Guard: no agents available (empty registry or all filtered out)
+    if not effective_agents:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail={
                 "code": "NO_AGENTS_AVAILABLE",
-                "message": "Nessun agente disponibile. Riprova tra qualche istante.",
-                "retry_after_seconds": 10,
+                "message": "Non c'è nessun agente che può assisterti al momento.",
+                "retry_after_seconds": None,
             },
         )
+
+    # 4. Validate agent_slug against the effective pool
+    if body.agent_slug is not None:
+        if body.agent_slug not in effective_agents:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "code": "AGENT_NOT_FOUND",
+                    "message": f"L'agente '{body.agent_slug}' non è disponibile.",
+                    "retry_after_seconds": None,
+                },
+            )
 
     # ------------------------------------------------------------------
     # Build the SSE generator — validation is complete, so all errors
@@ -119,6 +125,7 @@ async def chat_stream(
             session_id=session_id,
             message=body.message,
             agent_slug=body.agent_slug,
+            effective_agents=effective_agents,
             conversation_history=body.conversation_history,
             conversation_id=body.conversation_id,
             api_key=api_key,

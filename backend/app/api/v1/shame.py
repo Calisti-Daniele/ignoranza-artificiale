@@ -34,6 +34,11 @@ from app.schemas.shame import (
 from app.schemas.upvotes import UpvoteResponse
 from app.services.rate_limiter import rate_limiter
 
+# NOTE: rate_limiter, get_redis and get_session_id are intentionally NOT used
+# on the two public read endpoints (GET /shame and GET /shame/{slug}) because
+# they are called server-side by Next.js without a session cookie and must
+# remain unauthenticated.
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/shame", tags=["shame"])
@@ -66,24 +71,13 @@ def _extract_preview(transcript: list) -> str:
 # ---------------------------------------------------------------------------
 @router.get("", response_model=ShameListResponse)
 async def list_shame_entries(
-    request: Request,
-    session_id: Annotated[str, Depends(get_session_id)],
-    redis: Annotated[aioredis.Redis, Depends(get_redis)],
     db: Annotated[AsyncSession, Depends(get_db)],
     page: int = Query(default=1, ge=1, description="Numero pagina (1-indexed)"),
     page_size: int = Query(default=20, ge=1, le=50, description="Elementi per pagina"),
     sort: Literal["newest", "top"] = Query(default="newest", description="Ordinamento"),
     agent_slug: str | None = Query(default=None, description="Filtra per slug agente"),
 ) -> ShameListResponse:
-    client_ip = request.client.host if request.client else "unknown"
-    await rate_limiter.check_rate_limit(
-        session_id=session_id,
-        client_ip=client_ip,
-        redis=redis,
-        endpoint_key="shame_list",
-        session_limit=60,
-        ip_limit=60,
-    )
+    # Public read endpoint — no session or rate-limit check required.
 
     # Map API sort param to repository sort_by.
     sort_by: Literal["recent", "top"] = "top" if sort == "top" else "recent"
@@ -132,22 +126,10 @@ async def list_shame_entries(
     responses={404: {"description": "Entry non trovata"}},
 )
 async def get_shame_entry(
-    request: Request,
     slug: Annotated[str, Path(pattern=_SLUG_PATTERN)],
-    session_id: Annotated[str, Depends(get_session_id)],
-    redis: Annotated[aioredis.Redis, Depends(get_redis)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ShameEntryDetail:
-    client_ip = request.client.host if request.client else "unknown"
-    await rate_limiter.check_rate_limit(
-        session_id=session_id,
-        client_ip=client_ip,
-        redis=redis,
-        endpoint_key="shame_detail",
-        session_limit=60,
-        ip_limit=60,
-    )
-
+    # Public read endpoint — no session or rate-limit check required.
     repo = ShameRepository(db)
     entry = await repo.get_by_slug(slug)
     if entry is None:

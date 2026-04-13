@@ -12,7 +12,8 @@ COPY --from=ghcr.io/astral-sh/uv:0.7.8 /uv /usr/local/bin/uv
 
 COPY pyproject.toml uv.lock* ./
 
-# Install production dependencies into /build/.venv
+# Install production dependencies directly into /opt/venv so shebangs are correct at runtime.
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 RUN uv sync --frozen --no-dev
 
 # ---------------------------------------------------------------------------
@@ -28,18 +29,22 @@ WORKDIR /app
 RUN groupadd --gid 1001 appgroup && \
     useradd --uid 1001 --gid appgroup --shell /bin/bash --create-home appuser
 
-# Copy the pre-built virtual environment from the builder stage.
-COPY --from=builder /build/.venv /app/.venv
+# Copy the pre-built virtual environment to /opt/venv — outside the bind-mounted /app.
+COPY --from=builder /opt/venv /opt/venv
 
 # Copy only the application source code and agent definitions.
 COPY app/ ./app/
 COPY agents/ ./agents/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./alembic.ini
+COPY entrypoint.sh ./entrypoint.sh
 
-RUN chown -R appuser:appgroup /app
+RUN chmod +x ./entrypoint.sh && \
+    chown -R appuser:appgroup /app
 USER appuser
 
-# Prepend the venv's bin directory so Python and uvicorn resolve from .venv.
-ENV PATH="/app/.venv/bin:$PATH"
+# /opt/venv is owned by root but readable by all — that's fine for execution.
+ENV PATH="/opt/venv/bin:$PATH"
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["bash", "./entrypoint.sh"]

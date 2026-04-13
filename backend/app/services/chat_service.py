@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 # Constants
 # ---------------------------------------------------------------------------
 
-_MODEL = "meta-llama/llama-3.1-8b-instruct"
+_MODEL = "openai/gpt-4o-mini"
 _OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 # Redis conversation history settings
@@ -56,7 +56,7 @@ _STREAM_TIMEOUT_SECONDS = 120.0   # H-2: max wait for full streaming response
 
 # Max token constants
 _ROUTING_MAX_TOKENS = 30          # H-1: routing only needs a single slug
-_STREAM_MAX_TOKENS = 2048         # H-1: cap generated response length
+_STREAM_MAX_TOKENS = 1024         # H-1: cap generated response length
 
 # Master Agent routing prompt — instructs the LLM to pick the best persona.
 _MASTER_ROUTING_SYSTEM_PROMPT = """Sei un router intelligente per un sistema di agenti AI italiani volutamente assurdi.
@@ -179,18 +179,20 @@ def _build_memory(conversation_history: list[MessageItem]) -> Memory:
 # ---------------------------------------------------------------------------
 
 
-async def _route_to_agent(message: str, api_key: str) -> AgentConfig | None:
+async def _route_to_agent(
+    message: str, api_key: str, effective_agents: dict[str, AgentConfig]
+) -> AgentConfig | None:
     """
     Call a fast non-streaming LLM to pick the best agent slug for this message.
 
-    Returns the matched AgentConfig, or None if routing fails (caller falls back
-    to a random agent).
+    Returns the matched AgentConfig from effective_agents, or None if routing
+    fails (caller falls back to a random agent from the same pool).
     """
-    if not AGENTS:
+    if not effective_agents:
         return None
 
     agents_list = "\n".join(
-        f"- {slug}: {agent.name} ({agent.vibe_label})" for slug, agent in AGENTS.items()
+        f"- {slug}: {agent.name} ({agent.vibe_label})" for slug, agent in effective_agents.items()
     )
     routing_prompt = _MASTER_ROUTING_SYSTEM_PROMPT.format(agents_list=agents_list)
 
@@ -199,20 +201,22 @@ async def _route_to_agent(message: str, api_key: str) -> AgentConfig | None:
         model=_MODEL,
         system_prompt=routing_prompt,
         base_url=_OPENROUTER_BASE_URL,
-        max_tokens=_ROUTING_MAX_TOKENS,  # H-1: single slug needs at most ~30 tokens
     )
 
     try:
         # Non-streaming invoke — we only need the slug string back.
-        # ClientResponse.text concatenates all TextBlock contents; .content is list[Block].
+        # max_tokens passed here, not in constructor (H-1: single slug needs at most ~30 tokens).
         # H-2: enforce a hard timeout so a hanging OpenRouter call doesn't block the worker.
-        response = await asyncio.wait_for(client.a_invoke(message), timeout=_ROUTING_TIMEOUT_SECONDS)
+        response = await asyncio.wait_for(
+            client.a_invoke(message, max_tokens=_ROUTING_MAX_TOKENS),
+            timeout=_ROUTING_TIMEOUT_SECONDS,
+        )
         raw: str = response.text if hasattr(response, "text") else str(response)
         slug = raw.strip().lower().strip('"').strip("'")
 
-        if slug in AGENTS:
+        if slug in effective_agents:
             logger.info("Master Agent routing: slug='%s' selezionato per il messaggio.", slug)
-            return AGENTS[slug]
+            return effective_agents[slug]
 
         logger.warning(
             "Master Agent ha restituito uno slug sconosciuto: '%s'. Fallback random.",
@@ -226,9 +230,9 @@ async def _route_to_agent(message: str, api_key: str) -> AgentConfig | None:
     return None
 
 
-def _random_agent() -> AgentConfig:
-    """Pick a random agent from the registry."""
-    return random.choice(list(AGENTS.values()))
+def _random_agent(effective_agents: dict[str, AgentConfig]) -> AgentConfig:
+    """Pick a random agent from the effective pool."""
+    return random.choice(list(effective_agents.values()))
 
 
 # ---------------------------------------------------------------------------
@@ -241,6 +245,7 @@ async def stream_chat_response(
     session_id: str,
     message: str,
     agent_slug: str | None,
+    effective_agents: dict[str, AgentConfig],
     conversation_history: list[MessageItem],
     conversation_id: UUID | None,
     api_key: str,
@@ -267,25 +272,19 @@ async def stream_chat_response(
     # Step 1: Resolve agent
     # ------------------------------------------------------------------
     if agent_slug is not None:
-        agent = AGENTS.get(agent_slug)
+        agent = effective_agents.get(agent_slug)
         if agent is None:
             # Should not reach here normally (validated by endpoint), but guard anyway.
             yield _sse_error(
                 "AGENT_NOT_FOUND",
-                f"L'agente '{agent_slug}' non esiste.",
+                f"L'agente '{agent_slug}' non è disponibile.",
             )
             return
     else:
         # Master Agent routing
-        agent = await _route_to_agent(message, api_key)
+        agent = await _route_to_agent(message, api_key, effective_agents)
         if agent is None:
-            if not AGENTS:
-                yield _sse_error(
-                    "NO_AGENTS_AVAILABLE",
-                    "Nessun agente disponibile nel registro.",
-                )
-                return
-            agent = _random_agent()
+            agent = _random_agent(effective_agents)
             logger.info("Fallback random: agente '%s' selezionato.", agent.slug)
 
     # ------------------------------------------------------------------
@@ -306,7 +305,6 @@ async def stream_chat_response(
         model=_MODEL,
         system_prompt=agent.persona_description,
         base_url=_OPENROUTER_BASE_URL,
-        max_tokens=_STREAM_MAX_TOKENS,  # H-1: cap response length to prevent runaway generation
     )
 
     full_response_parts: list[str] = []
@@ -315,8 +313,9 @@ async def stream_chat_response(
     try:
         # H-2: asyncio.timeout enforces a deadline over the entire stream, including
         # per-chunk stalls (asyncio.wait_for cannot wrap async generators directly).
+        # max_tokens passed here, not in constructor (H-1: cap response length).
         async with asyncio.timeout(_STREAM_TIMEOUT_SECONDS):
-            async for chunk in client.a_stream_invoke(message, memory=memory):
+            async for chunk in client.a_stream_invoke(message, memory=memory, max_tokens=_STREAM_MAX_TOKENS):
                 if chunk.delta:
                     full_response_parts.append(chunk.delta)
                     token_count += 1

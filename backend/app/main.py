@@ -75,7 +75,7 @@ app.add_middleware(
 # Layer 1 (outermost): CORS — MUST be the last add_middleware call.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[str(origin) for origin in settings.CORS_ORIGINS],
+    allow_origins=[str(origin).rstrip("/") for origin in settings.CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "X-Session-ID"],
